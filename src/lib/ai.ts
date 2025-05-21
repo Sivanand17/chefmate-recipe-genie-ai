@@ -1,4 +1,3 @@
-
 import { Recipe } from '@/types/recipe';
 import { sampleRecipes } from './sampleData';
 
@@ -11,47 +10,118 @@ export async function getRecipeRecommendations(query: string): Promise<{ message
   // Simulate API call with a delay
   await new Promise(resolve => setTimeout(resolve, 1500));
   
-  // For demonstration, return filtered recipes based on simple keyword matching
+  // Extract ingredients from the query
   const lowerQuery = query.toLowerCase();
   
-  // Extract potential keywords from the query
+  // Look for ingredients patterns like "I have X, Y, Z" or just comma-separated lists
+  const ingredientsMatch = 
+    lowerQuery.match(/(?:i have|ingredients:|with|using)(?:\s+the)?(?:\s+ingredients)?[\s:]*([\w\s,]+)/) || 
+    lowerQuery.split(/[,.]/).filter(item => 
+      !item.includes('recipe') && 
+      !item.includes('make') && 
+      item.trim().length > 0
+    );
+  
+  let ingredients: string[] = [];
+  
+  if (ingredientsMatch) {
+    if (Array.isArray(ingredientsMatch) && ingredientsMatch[1]) {
+      // Extract from "I have X, Y, Z" pattern
+      ingredients = ingredientsMatch[1].split(',').map(item => item.trim()).filter(item => item.length > 0);
+    } else {
+      // Extract from comma-separated list
+      ingredients = ingredientsMatch.map(item => item.trim()).filter(item => item.length > 0);
+    }
+  }
+  
+  // Also extract potential meal types/keywords from the query
   const keywords = [
     ...lowerQuery.match(/\b(pasta|chicken|vegetarian|vegan|dessert|quick|easy|breakfast|lunch|dinner)\b/gi) || [],
     ...lowerQuery.match(/\b(italian|asian|thai|mexican|american|indian)\b/gi) || []
   ];
   
-  // For empty keywords or general queries about recipes
-  if (keywords.length === 0 || /what.*recipes|suggest.*recipe|recommend/i.test(lowerQuery)) {
+  // If there are no ingredients or keywords but it's a request for recipes
+  if ((ingredients.length === 0 && keywords.length === 0) || /what.*recipes|suggest.*recipe|recommend/i.test(lowerQuery)) {
     return {
       message: "Here are some popular recipes you might enjoy!",
       recipes: sampleRecipes.slice(0, 3)
     };
   }
   
-  // Filter recipes based on keywords
-  let filteredRecipes = sampleRecipes.filter(recipe => {
+  console.log('Extracted ingredients:', ingredients);
+  
+  // Score recipes based on ingredient matches
+  const scoredRecipes = sampleRecipes.map(recipe => {
+    let score = 0;
     const recipeText = `${recipe.name} ${recipe.description} ${recipe.cuisine} ${recipe.category}`.toLowerCase();
-    return keywords.some(keyword => recipeText.includes(keyword.toLowerCase()));
+    
+    // Score based on ingredient matches
+    if (recipe.ingredients) {
+      const recipeIngredients = recipe.ingredients.map(ing => ing.toLowerCase());
+      
+      ingredients.forEach(ingredient => {
+        const ingredientLower = ingredient.toLowerCase();
+        if (recipeIngredients.some(ri => ri.includes(ingredientLower))) {
+          score += 2; // Direct ingredient match
+        } else if (recipeText.includes(ingredientLower)) {
+          score += 1; // Mentioned in description
+        }
+      });
+    }
+    
+    // Score based on keyword matches
+    keywords.forEach(keyword => {
+      if (keyword && recipeText.includes(keyword.toLowerCase())) {
+        score += 1;
+      }
+    });
+    
+    return { recipe, score };
   });
+  
+  // Sort by score and get top recipes
+  scoredRecipes.sort((a, b) => b.score - a.score);
+  
+  // Get recipes with a score > 0 or top recipes if no matches
+  let filteredRecipes = scoredRecipes.filter(item => item.score > 0).map(item => item.recipe);
   
   // If no matches, return a subset of recipes
   if (filteredRecipes.length === 0) {
     filteredRecipes = sampleRecipes.slice(0, 2);
-    return {
-      message: `I couldn't find exact matches for "${query}", but here are some recipes you might like:`,
-      recipes: filteredRecipes
-    };
+    
+    if (ingredients.length > 0) {
+      return {
+        message: `I couldn't find recipes that use exactly ${ingredients.join(', ')}, but here are some recipes you might like:`,
+        recipes: filteredRecipes
+      };
+    } else {
+      return {
+        message: `I couldn't find exact matches for "${query}", but here are some recipes you might like:`,
+        recipes: filteredRecipes
+      };
+    }
   }
   
   // Generate an appropriate response message with specific recipe names
   let message = "";
-  if (filteredRecipes.length === 1) {
-    message = `I found the perfect recipe for you: "${filteredRecipes[0].name}"! It's a ${filteredRecipes[0].difficulty || 'medium'} difficulty ${filteredRecipes[0].cuisine || ''} dish.`;
-  } else if (filteredRecipes.length === 2) {
-    message = `Here are two great recipes that match what you're looking for: "${filteredRecipes[0].name}" and "${filteredRecipes[1].name}".`;
+  if (ingredients.length > 0) {
+    if (filteredRecipes.length === 1) {
+      message = `Perfect! You can make "${filteredRecipes[0].name}" with ${ingredients.join(', ')}. It's a ${filteredRecipes[0].difficulty || 'medium'} difficulty ${filteredRecipes[0].cuisine || ''} dish.`;
+    } else if (filteredRecipes.length === 2) {
+      message = `Great! With ${ingredients.join(', ')}, you can make "${filteredRecipes[0].name}" and "${filteredRecipes[1].name}".`;
+    } else {
+      const recipeNames = filteredRecipes.slice(0, 3).map(r => `"${r.name}"`).join(", ");
+      message = `With ${ingredients.join(', ')}, you can make several dishes including ${recipeNames}, and more!`;
+    }
   } else {
-    const recipeNames = filteredRecipes.slice(0, 3).map(r => `"${r.name}"`).join(", ");
-    message = `I found ${filteredRecipes.length} recipes for you, including ${recipeNames}, and more!`;
+    if (filteredRecipes.length === 1) {
+      message = `I found the perfect recipe for you: "${filteredRecipes[0].name}"! It's a ${filteredRecipes[0].difficulty || 'medium'} difficulty ${filteredRecipes[0].cuisine || ''} dish.`;
+    } else if (filteredRecipes.length === 2) {
+      message = `Here are two great recipes that match what you're looking for: "${filteredRecipes[0].name}" and "${filteredRecipes[1].name}".`;
+    } else {
+      const recipeNames = filteredRecipes.slice(0, 3).map(r => `"${r.name}"`).join(", ");
+      message = `I found ${filteredRecipes.length} recipes for you, including ${recipeNames}, and more!`;
+    }
   }
   
   return { message, recipes: filteredRecipes };

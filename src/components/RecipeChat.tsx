@@ -15,7 +15,7 @@ const RecipeChat = forwardRef<HTMLInputElement, RecipeChatProps>(({ onResults },
   const [conversation, setConversation] = useState<{role: 'user' | 'assistant', content: string}[]>([
     {
       role: 'assistant',
-      content: 'Hi! I\'m ChefMate AI. Tell me what ingredients you have or what kind of recipe you\'re looking for!'
+      content: 'Hi! I\'m ChefMate AI. Tell me what ingredients you have, and I\'ll suggest recipes you can make!'
     }
   ]);
   const { toast } = useToast();
@@ -99,7 +99,7 @@ const RecipeChat = forwardRef<HTMLInputElement, RecipeChatProps>(({ onResults },
               handleSendMessage();
             }
           }}
-          placeholder="Ask about recipes or list your ingredients..."
+          placeholder="List ingredients you have (e.g., eggs, pasta, tomatoes)..."
           className="flex-1 bg-background rounded-md border border-input px-4 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
           disabled={loading}
           ref={ref}
