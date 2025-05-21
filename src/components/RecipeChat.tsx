@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, forwardRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChefHat, Send, Loader2 } from 'lucide-react';
 import { getRecipeRecommendations } from '@/lib/ai';
@@ -9,7 +9,7 @@ interface RecipeChatProps {
   onResults: (recipes: any[]) => void;
 }
 
-const RecipeChat = ({ onResults }: RecipeChatProps) => {
+const RecipeChat = forwardRef<HTMLInputElement, RecipeChatProps>(({ onResults }, ref) => {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [conversation, setConversation] = useState<{role: 'user' | 'assistant', content: string}[]>([
@@ -102,6 +102,7 @@ const RecipeChat = ({ onResults }: RecipeChatProps) => {
           placeholder="Ask about recipes or list your ingredients..."
           className="flex-1 bg-background rounded-md border border-input px-4 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
           disabled={loading}
+          ref={ref}
         />
         <Button 
           onClick={handleSendMessage} 
@@ -114,6 +115,8 @@ const RecipeChat = ({ onResults }: RecipeChatProps) => {
       </div>
     </div>
   );
-};
+});
+
+RecipeChat.displayName = 'RecipeChat';
 
 export default RecipeChat;

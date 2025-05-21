@@ -4,7 +4,7 @@ import RecipeCard from './RecipeCard';
 import { Recipe } from '@/types/recipe';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Cake, Carrot, Pizza, Sandwich, SlidersHorizontal } from 'lucide-react';
+import { Cake, Carrot, Pizza, Sandwich, SlidersHorizontal, Clock } from 'lucide-react';
 
 interface RecipeListProps {
   recipes: Recipe[];
