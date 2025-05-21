@@ -18,7 +18,7 @@ const Header = () => {
               </Link>
             </li>
             <li>
-              <Link to="/" className="text-foreground hover:text-chef-700 font-medium">
+              <Link to="/my-recipes" className="text-foreground hover:text-chef-700 font-medium">
                 My Recipes
               </Link>
             </li>

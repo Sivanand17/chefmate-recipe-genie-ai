@@ -10,11 +10,14 @@ import { Clock, ChefHat, Utensils, ArrowLeft, PrinterIcon, Bookmark, Share2 } fr
 import { Recipe } from '@/types/recipe';
 import { getRecipeById } from '@/lib/ai';
 import { sampleRecipes } from '@/lib/sampleData';
+import { useToast } from '@/components/ui/use-toast';
 
 const RecipeDetails = () => {
   const { id } = useParams<{ id: string }>();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSaved, setIsSaved] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchRecipe = async () => {
@@ -23,6 +26,14 @@ const RecipeDetails = () => {
         // Try to get the recipe from the AI service
         const fetchedRecipe = await getRecipeById(id!);
         setRecipe(fetchedRecipe);
+        
+        // Check if recipe is saved
+        try {
+          const savedRecipes = JSON.parse(localStorage.getItem('savedRecipes') || '[]');
+          setIsSaved(savedRecipes.some((r: Recipe) => r.id === id));
+        } catch (error) {
+          console.error('Error checking saved status:', error);
+        }
       } catch (error) {
         console.error('Error fetching recipe:', error);
         
@@ -38,6 +49,41 @@ const RecipeDetails = () => {
     
     fetchRecipe();
   }, [id]);
+
+  const toggleSaveRecipe = () => {
+    if (!recipe) return;
+    
+    try {
+      const savedRecipes = JSON.parse(localStorage.getItem('savedRecipes') || '[]');
+      
+      if (isSaved) {
+        // Remove from saved recipes
+        const updatedRecipes = savedRecipes.filter((r: Recipe) => r.id !== recipe.id);
+        localStorage.setItem('savedRecipes', JSON.stringify(updatedRecipes));
+        setIsSaved(false);
+        toast({
+          title: "Recipe removed",
+          description: `"${recipe.name}" has been removed from your saved recipes.`,
+        });
+      } else {
+        // Add to saved recipes
+        const updatedRecipes = [...savedRecipes, recipe];
+        localStorage.setItem('savedRecipes', JSON.stringify(updatedRecipes));
+        setIsSaved(true);
+        toast({
+          title: "Recipe saved",
+          description: `"${recipe.name}" has been added to your saved recipes.`,
+        });
+      }
+    } catch (error) {
+      console.error('Error saving recipe:', error);
+      toast({
+        title: "Couldn't save recipe",
+        description: "There was an error saving this recipe.",
+        variant: "destructive"
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -167,8 +213,12 @@ const RecipeDetails = () => {
                 <Button variant="outline" className="flex-1">
                   <PrinterIcon className="mr-2 h-4 w-4" /> Print
                 </Button>
-                <Button variant="outline" className="flex-1">
-                  <Bookmark className="mr-2 h-4 w-4" /> Save
+                <Button 
+                  variant={isSaved ? "default" : "outline"} 
+                  className={`flex-1 ${isSaved ? 'bg-chef-600 hover:bg-chef-700' : ''}`}
+                  onClick={toggleSaveRecipe}
+                >
+                  <Bookmark className="mr-2 h-4 w-4" /> {isSaved ? 'Saved' : 'Save'}
                 </Button>
                 <Button variant="outline" className="flex-1">
                   <Share2 className="mr-2 h-4 w-4" /> Share

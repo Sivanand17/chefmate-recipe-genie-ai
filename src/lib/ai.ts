@@ -1,8 +1,6 @@
+
 import { Recipe } from '@/types/recipe';
 import { sampleRecipes } from './sampleData';
-
-// This is a placeholder for the actual AI service
-// In a real implementation, this would connect to a Hugging Face model
 
 export async function getRecipeRecommendations(query: string): Promise<{ message: string; recipes: Recipe[] }> {
   console.log('Searching for recipes with query:', query);
@@ -43,7 +41,7 @@ export async function getRecipeRecommendations(query: string): Promise<{ message
   // If there are no ingredients or keywords but it's a request for recipes
   if ((ingredients.length === 0 && keywords.length === 0) || /what.*recipes|suggest.*recipe|recommend/i.test(lowerQuery)) {
     return {
-      message: "Here are some popular recipes you might enjoy!",
+      message: "Here are some popular recipes you might enjoy! Click on any recipe to see detailed cooking instructions.",
       recipes: sampleRecipes.slice(0, 3)
     };
   }
@@ -91,37 +89,50 @@ export async function getRecipeRecommendations(query: string): Promise<{ message
     
     if (ingredients.length > 0) {
       return {
-        message: `I couldn't find recipes that use exactly ${ingredients.join(', ')}, but here are some recipes you might like:`,
+        message: `I couldn't find recipes that use exactly ${ingredients.join(', ')}, but here are some recipes you might like. Click on any recipe to see detailed cooking instructions!`,
         recipes: filteredRecipes
       };
     } else {
       return {
-        message: `I couldn't find exact matches for "${query}", but here are some recipes you might like:`,
+        message: `I couldn't find exact matches for "${query}", but here are some recipes you might like. Click on any recipe to see detailed cooking instructions!`,
         recipes: filteredRecipes
       };
     }
   }
   
-  // Generate an appropriate response message with specific recipe names
+  // Generate a detailed response message with specific recipe names and instructions
   let message = "";
   if (ingredients.length > 0) {
     if (filteredRecipes.length === 1) {
-      message = `Perfect! You can make "${filteredRecipes[0].name}" with ${ingredients.join(', ')}. It's a ${filteredRecipes[0].difficulty || 'medium'} difficulty ${filteredRecipes[0].cuisine || ''} dish.`;
+      message = `Perfect! Using ${ingredients.join(', ')}, you can make "${filteredRecipes[0].name}" - it's a ${filteredRecipes[0].difficulty || 'medium'} difficulty ${filteredRecipes[0].cuisine || ''} dish. Click on the recipe card to see detailed step-by-step cooking instructions!`;
     } else if (filteredRecipes.length === 2) {
-      message = `Great! With ${ingredients.join(', ')}, you can make "${filteredRecipes[0].name}" and "${filteredRecipes[1].name}".`;
+      message = `Great! With ${ingredients.join(', ')}, you can make "${filteredRecipes[0].name}" and "${filteredRecipes[1].name}". Click on any recipe to view detailed cooking instructions!`;
     } else {
       const recipeNames = filteredRecipes.slice(0, 3).map(r => `"${r.name}"`).join(", ");
-      message = `With ${ingredients.join(', ')}, you can make several dishes including ${recipeNames}, and more!`;
+      message = `With ${ingredients.join(', ')}, you can make several dishes including ${recipeNames}, and more! Click on any recipe card to see the full ingredients list and detailed step-by-step cooking instructions.`;
     }
   } else {
     if (filteredRecipes.length === 1) {
-      message = `I found the perfect recipe for you: "${filteredRecipes[0].name}"! It's a ${filteredRecipes[0].difficulty || 'medium'} difficulty ${filteredRecipes[0].cuisine || ''} dish.`;
+      message = `I found the perfect recipe for you: "${filteredRecipes[0].name}"! It's a ${filteredRecipes[0].difficulty || 'medium'} difficulty ${filteredRecipes[0].cuisine || ''} dish. Click on the recipe card to see all the ingredients and detailed cooking instructions.`;
     } else if (filteredRecipes.length === 2) {
-      message = `Here are two great recipes that match what you're looking for: "${filteredRecipes[0].name}" and "${filteredRecipes[1].name}".`;
+      message = `Here are two great recipes that match what you're looking for: "${filteredRecipes[0].name}" and "${filteredRecipes[1].name}". Click on any recipe to see detailed cooking instructions!`;
     } else {
       const recipeNames = filteredRecipes.slice(0, 3).map(r => `"${r.name}"`).join(", ");
-      message = `I found ${filteredRecipes.length} recipes for you, including ${recipeNames}, and more!`;
+      message = `I found ${filteredRecipes.length} recipes for you, including ${recipeNames}, and more! Click on any recipe card to view the full ingredients list and step-by-step cooking instructions.`;
     }
+  }
+  
+  if (/how to make|how do i make|cooking instructions/i.test(lowerQuery) && filteredRecipes.length > 0) {
+    const recipe = filteredRecipes[0];
+    const ingredients = recipe.ingredients ? recipe.ingredients.join(', ') : 'ingredients not available';
+    
+    let instructionSummary = '';
+    if (recipe.instructions && recipe.instructions.length > 0) {
+      // Get first and last step to summarize
+      instructionSummary = `First, ${recipe.instructions[0].toLowerCase()} Then follow the remaining steps and finally, ${recipe.instructions[recipe.instructions.length - 1].toLowerCase()}`;
+    }
+    
+    message = `To make "${recipe.name}", you'll need: ${ingredients}. ${instructionSummary} Click on the recipe card to see the complete step-by-step instructions!`;
   }
   
   return { message, recipes: filteredRecipes };

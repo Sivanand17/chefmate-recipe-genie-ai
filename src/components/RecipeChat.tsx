@@ -15,7 +15,7 @@ const RecipeChat = forwardRef<HTMLInputElement, RecipeChatProps>(({ onResults },
   const [conversation, setConversation] = useState<{role: 'user' | 'assistant', content: string}[]>([
     {
       role: 'assistant',
-      content: 'Hi! I\'m ChefMate AI. Tell me what ingredients you have, and I\'ll suggest recipes you can make!'
+      content: 'Hi! I\'m ChefMate AI. Tell me what ingredients you have, and I\'ll suggest recipes you can make with detailed instructions!'
     }
   ]);
   const { toast } = useToast();
@@ -47,7 +47,7 @@ const RecipeChat = forwardRef<HTMLInputElement, RecipeChatProps>(({ onResults },
       });
       setConversation(prev => [...prev, { 
         role: 'assistant', 
-        content: "I'm sorry, I couldn't process that request. Could you try again?" 
+        content: "I'm sorry, I couldn't process that request. Could you try again with different ingredients?" 
       }]);
     } finally {
       setLoading(false);
@@ -83,7 +83,7 @@ const RecipeChat = forwardRef<HTMLInputElement, RecipeChatProps>(({ onResults },
           <div className="flex justify-start">
             <div className="max-w-[80%] rounded-lg px-4 py-2 bg-muted text-foreground flex items-center">
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Thinking...
+              Finding recipes for you...
             </div>
           </div>
         )}
