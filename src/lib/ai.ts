@@ -1,3 +1,4 @@
+
 import { Recipe } from '@/types/recipe';
 import { sampleRecipes } from './sampleData';
 
@@ -42,12 +43,15 @@ export async function getRecipeRecommendations(query: string): Promise<{ message
     };
   }
   
-  // Generate an appropriate response message
+  // Generate an appropriate response message with specific recipe names
   let message = "";
   if (filteredRecipes.length === 1) {
-    message = `I found this perfect recipe that matches what you're looking for!`;
+    message = `I found the perfect recipe for you: "${filteredRecipes[0].name}"! It's a ${filteredRecipes[0].difficulty || 'medium'} difficulty ${filteredRecipes[0].cuisine || ''} dish.`;
+  } else if (filteredRecipes.length === 2) {
+    message = `Here are two great recipes that match what you're looking for: "${filteredRecipes[0].name}" and "${filteredRecipes[1].name}".`;
   } else {
-    message = `Here are ${filteredRecipes.length} recipes that match your request:`;
+    const recipeNames = filteredRecipes.slice(0, 3).map(r => `"${r.name}"`).join(", ");
+    message = `I found ${filteredRecipes.length} recipes for you, including ${recipeNames}, and more!`;
   }
   
   return { message, recipes: filteredRecipes };
